@@ -1,0 +1,12 @@
+[
+    {"subject": "bob", "predicate": "friends-with", "object": "alice","start": 0, "end":0},
+    {"subject": "alice", "predicate": "friends-with", "object": "bob","start": 0, "end":0},
+    {"subject": "bob", "predicate": "creates", "object": "bob-pub-key","start": 0, "end":0},
+    {"subject": "alice", "predicate": "creates", "object": "alice-pub-key","start": 0, "end":0},
+    {"subject": "bob", "predicate": "sends-pub-key", "object": "alice","start": 0, "end":0},
+    {"subject": "bob", "predicate": "recieves-pub-key", "object": "alice","start": 0, "end":0},
+    {"subject": "alice", "predicate": "sends-pub-key", "object": "bob","start": 0, "end":0},
+    {"subject": "alice", "predicate": "recieves-pub-key", "object": "bob","start": 0, "end":0},
+    {"subject": "earl", "predicate": "recieves-pub-key", "object": "alice","start": 0, "end":0},
+    {"subject": "earl", "predicate": "recieves-pub-key", "object": "bob","start": 0, "end":0}
+]
