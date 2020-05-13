@@ -1,17 +1,25 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/jtaylorcpp/quaditor"
 	"github.com/jtaylorcpp/quaditor/auditors"
 )
 
 func init() {
-	runCmd.AddCommand(queryCmd)
+	rootCmd.AddCommand(queryCmd)
+
+	queryCmd.PersistentFlags().StringVarP(&queryFileName, "file", "f", "", "json file of quads")
+	queryCmd.MarkPersistentFlagRequired("file")
 }
+
+var queryFileName string
 
 var queryCmd = &cobra.Command{
 	Use:   "query",
@@ -44,8 +52,24 @@ var queryCmd = &cobra.Command{
 					log.Printf("new time series auditor: %#v\n", tsaudit)
 				}
 
+				jsonFile, err := ioutil.ReadFile(queryFileName)
+				if err != nil {
+					log.Println("error reading json query: ", err.Error())
+					return
+				}
+
+				var query []quaditor.Query
+				err = json.Unmarshal(jsonFile, &query)
+				if err != nil {
+					log.Println("error reading json query: ", err.Error())
+					return
+				}
+
 				log.Println("running query")
-				tsaudit.Query()
+				err = tsaudit.Query(query...)
+				if err != nil {
+					log.Println("error running query: ", err.Error())
+				}
 				log.Println("query ran")
 			default:
 				log.Println("unknown audit backend type")

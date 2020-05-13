@@ -1,0 +1,20 @@
+[
+    {
+        "constraint": {
+            "subject": "bob",
+            "predicate": "friends-with"
+        },
+        "assign": {
+            "object": "bobs-friend"
+        }
+    },
+    {
+        "constraint": {
+            "object": "bob",
+            "predicate": "recieves-pub-key"
+        },
+        "assign": {
+            "subject": "bobs-friend"
+        }
+    }
+]

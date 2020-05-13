@@ -63,36 +63,63 @@ func (t *TimeSeriesAuditor) Publish(quads []quaditor.Quad) error {
 
 func (t *TimeSeriesAuditor) Close() {}
 
-func (t *TimeSeriesAuditor) Query() {
+func (t *TimeSeriesAuditor) Query(queries ...quaditor.Query) error {
 	log.Println("running query")
-	paths, err := iterator.Run(
-		t.graph,
-		iterator.Constraint{
-			[]euler.Value{
-				//euler.Predicate("recieves-pub-key"),
-				euler.Object("bob"),
-			},
-			[]euler.Value{
-				//euler.Subject("bobs-friend"),
-			},
-		},
-		iterator.Constraint{
-			[]euler.Value{
-				//euler.Predicate("sends-pub-key"),
-				euler.Object("alice"),
-			},
-			[]euler.Value{
-				//euler.Subject("bobs-friend"),
-			},
-		},
+
+	iteratorQueries := []iterator.Iterator{}
+	for _, query := range queries {
+		// check constraints
+		constraints := []euler.Value{}
+		if query.Constraint.Subject != "" {
+			constraints = append(constraints, euler.Subject(query.Constraint.Subject))
+		}
+		if query.Constraint.Object != "" {
+			constraints = append(constraints, euler.Object(query.Constraint.Object))
+		}
+		if query.Constraint.Predicate != "" {
+			constraints = append(constraints, euler.Predicate(query.Constraint.Predicate))
+		}
+		if query.Constraint.Start != 0 {
+			constraints = append(constraints, euler.Start(query.Constraint.Start))
+		}
+		if query.Constraint.End != 0 {
+			constraints = append(constraints, euler.End(query.Constraint.End))
+		}
+
+		assign := []euler.Value{}
+		if query.Assignment.Subject != "" {
+			assign = append(assign, euler.Subject(query.Assignment.Subject))
+		}
+		if query.Assignment.Object != "" {
+			assign = append(assign, euler.Object(query.Assignment.Object))
+		}
+		if query.Assignment.Predicate != "" {
+			assign = append(assign, euler.Predicate(query.Assignment.Predicate))
+		}
+		if query.Assignment.Start != 0 {
+			assign = append(assign, euler.Start(query.Assignment.Start))
+		}
+		if query.Assignment.End != 0 {
+			assign = append(assign, euler.End(query.Assignment.End))
+		}
+
+		iteratorQueries = append(iteratorQueries, iterator.Constraint{constraints, assign})
+
+	}
+
+	paths, err := iterator.Run(t.graph,
+		iteratorQueries...,
 	)
 
 	log.Println("number of returned paths: ", len(paths))
 	if err != nil {
 		log.Println("error running query: ", err.Error())
+		return err
 	} else {
 		for idx, path := range paths {
 			log.Printf("path %v: %#v\n", idx, path)
 		}
+
+		return nil
 	}
 }

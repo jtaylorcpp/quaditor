@@ -13,13 +13,13 @@ import (
 )
 
 func init() {
-	runCmd.AddCommand(loadCmd)
+	rootCmd.AddCommand(loadCmd)
 
-	loadCmd.PersistentFlags().StringVarP(&fileName, "file", "f", "", "json file of quads")
+	loadCmd.PersistentFlags().StringVarP(&loadFileName, "file", "f", "", "json file of quads")
 	loadCmd.MarkPersistentFlagRequired("file")
 }
 
-var fileName string
+var loadFileName string
 
 var loadCmd = &cobra.Command{
 	Use:   "load",
@@ -52,7 +52,7 @@ var loadCmd = &cobra.Command{
 					log.Printf("new time series auditor: %#v\n", tsaudit)
 				}
 
-				jsonFile, err := ioutil.ReadFile(fileName)
+				jsonFile, err := ioutil.ReadFile(loadFileName)
 				if err != nil {
 					log.Println("error reading in data to load: ", err.Error())
 					return
