@@ -13,10 +13,10 @@ postgres:
 	POSTGRES_SCRIPT
 
 ####### IRC stuff #########
-ifeq ($(findstring arm6,$(shell uname -m)), arm6)
-IRC_ARCH = arm6
-else ifeq ($(findstring arm7,$(shell uname -m)), arm7)
-IRC_ARCH = arm7
+ifeq ($(findstring armv6,$(shell uname -m)), armv6)
+IRC_ARCH = armv6
+else ifeq ($(findstring armv7,$(shell uname -m)), armv7)
+IRC_ARCH = armv7
 else ifeq ($(findstring x86,$(shell uname -m)), x86)
 IRC_ARCH = x64
 else
@@ -31,29 +31,56 @@ else
 $(error unable to determine OS)
 endif
 
-ircd:
+ircd: ircd-stage-files
+ifneq ($(whoami), root)
+	sudo mv $(shell ls -d /home/oragono/oragono-2.0.0*)/oragono /home/oragono/oragono
+	sudo chown oragono:oragono /home/oragono/oragono
+	sudo mv $(shell ls -d /home/oragono/oragono-2.0.0*)/languages /home/oragono/
+	sudo chown -R oragono:oragono /home/oragono/languages
+	sudo systemctl daemon-reload
+	sudo systemctl enable oragono.service
+	sudo systemctl start oragono.service
+else 
+	mv $(shell ls -d /home/oragono/oragono-2.0.0*)/oragono /home/oragono/oragono
+	chown oragono:oragono /home/oragono/oragono
+	mv $(shell ls -d /home/oragono/oragono-2.0.0*)/languages /home/oragono/
+	chown -R oragono:oragono /home/oragono/languages
+	systemctl daemon-reload
+	systemctl enable oragono.service
+	systemctl start oragono.service
+endif
+
+ircd-stage-files:
 	$(info os: $(IRC_OS) arch: $(IRC_OS))
 	wget -O /tmp/oragono.tar.gz https://github.com/oragono/oragono/releases/download/v2.0.0/oragono-2.0.0-$(IRC_OS)-$(IRC_ARCH).tar.gz
 ifneq ($(whoami), root)
 	sudo adduser --system --group oragono
 	sudo tar -xf /tmp/oragono.tar.gz -C /home/oragono
+	sudo rm -rf /tmp/oragono.tar.gz
 	sudo cp support_files/ircd.yaml /home/oragono/ircd.yaml
-	sudo cp $(shell ls -d /home/oragono/oragono*)/oragono /home/oragono/oragono
+	sudo chown oragono:oragono /home/oragono/ircd.yaml
 	sudo cp support_files/oragono.service /etc/systemd/system/oragono.service
-	sudo systemctl daemon-reload
-	sudo systemctl enable ircd.service
-	sudo systemctl start ircd.service
-else 
+else
 	adduser --system --group oragono
 	tar -xf /tmp/oragono.tar.gz -C /home/oragono
-endif
-ifneq ($(whoami), root)
-	
-else
-	cp support_files/ircd.yaml $(shell ls -d /opt/oragono*)/ircd.yaml
-	cp support_files/ircd.service /etc/systemd/system/ircd.service
-	systemctl daemon-reload
-	systemctl enable ircd.service
-	systemctl start ircd.service
+	rm -rf /tmp/oragono.tar.gz
+	cp support_files/ircd.yaml /home/oragono/ircd.yaml
+	chown oragono:oragono /home/oragono/ircd.yaml
+	cp support_files/oragono.service /etc/systemd/system/oragono.service
 endif
 
+ircd-clean:
+	$(info os: $(IRC_OS) arch: $(IRC_OS))
+ifneq ($(whoami), root)
+	sudo systemctl stop oragono.service
+	sudo systemctl disable oragono.service
+	sudo deluser --remove-home oragono
+	sudo rm /etc/systemd/system/oragono.service
+	sudo systemctl daemon-reload
+else 
+	systemctl stop oragono.service
+	systemctl disable oragono.service
+	deluser --remove-home oragono
+	rm /etc/systemd/system/oragono.service
+	systemctl daemon-reload
+endif
