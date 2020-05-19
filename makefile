@@ -7,10 +7,8 @@ go_get_private:
 postgres:
 	sudo apt install -y postgresql
 	sudo service postgresql start
-	sudo -u postgres psql <<POSTGRES_SCRIPT 
-	CREATE USER euler WITH PASSWORD 'euler';
-	CREATE DATABASE euler;
-	POSTGRES_SCRIPT
+	sudo -u postgres psql -c "CREATE USER euler WITH PASSWORD 'euler'" 
+	sudo -u postgres psql -c 'CREATE DATABASE euler'
 
 ####### IRC stuff #########
 ifeq ($(findstring armv6,$(shell uname -m)), armv6)

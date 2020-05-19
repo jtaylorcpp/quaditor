@@ -63,7 +63,7 @@ func (t *TimeSeriesAuditor) Publish(quads []quaditor.Quad) error {
 
 func (t *TimeSeriesAuditor) Close() {}
 
-func (t *TimeSeriesAuditor) Query(queries ...quaditor.Query) error {
+func (t *TimeSeriesAuditor) Query(queries ...quaditor.Query) ([]iterator.Path, error) {
 	log.Println("running query")
 
 	iteratorQueries := []iterator.Iterator{}
@@ -114,12 +114,12 @@ func (t *TimeSeriesAuditor) Query(queries ...quaditor.Query) error {
 	log.Println("number of returned paths: ", len(paths))
 	if err != nil {
 		log.Println("error running query: ", err.Error())
-		return err
+		return []iterator.Path{}, err
 	} else {
 		for idx, path := range paths {
 			log.Printf("path %v: %#v\n", idx, path)
 		}
 
-		return nil
+		return paths, nil
 	}
 }

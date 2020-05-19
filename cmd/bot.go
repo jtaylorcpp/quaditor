@@ -1,31 +1,26 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"log"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/jtaylorcpp/quaditor"
 	"github.com/jtaylorcpp/quaditor/auditors"
+	"github.com/jtaylorcpp/quaditor/chatbots"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
-	rootCmd.AddCommand(queryCmd)
-
-	queryCmd.PersistentFlags().StringVarP(&queryFileName, "file", "f", "", "json file of quads")
-	queryCmd.MarkPersistentFlagRequired("file")
+	rootCmd.AddCommand(botCmd)
 }
 
-var queryFileName string
-
-var queryCmd = &cobra.Command{
-	Use:   "query",
-	Short: "query quads into backend",
+var botCmd = &cobra.Command{
+	Use:   "bot",
+	Short: "run irc bot",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("starting auditor of type: ", viper.GetString("audit_type"))
+		var auditor quaditor.Auditor
 		switch viper.GetString("audit_type") {
 		case "time-series":
 			log.Println("using time-series backend type: ", viper.GetString("audit_backend"))
@@ -52,30 +47,19 @@ var queryCmd = &cobra.Command{
 					log.Printf("new time series auditor: %#v\n", tsaudit)
 				}
 
-				jsonFile, err := ioutil.ReadFile(queryFileName)
-				if err != nil {
-					log.Println("error reading json query: ", err.Error())
-					return
-				}
-
-				var query []quaditor.Query
-				err = json.Unmarshal(jsonFile, &query)
-				if err != nil {
-					log.Println("error reading json query: ", err.Error())
-					return
-				}
-
-				log.Println("running query")
-				_, err = tsaudit.Query(query...)
-				if err != nil {
-					log.Println("error running query: ", err.Error())
-				}
-				log.Println("query ran")
+				auditor = tsaudit
 			default:
 				log.Println("unknown audit backend type")
+				return
 			}
 		default:
-			log.Println("unknown auditor type")
+			log.Errorln("unknown auditor type")
+			return
 		}
+
+		log.Println("starting irc bot")
+		ircbot := chatbots.NewIRCBot(auditor)
+		log.Printf("bot config: %#v\n", *ircbot)
+		ircbot.Run()
 	},
 }
