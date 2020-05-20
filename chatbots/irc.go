@@ -44,8 +44,10 @@ type IRCBot struct {
 	config *irc.Config
 }
 
-func NewIRCBot(auditor quaditor.Auditor) *IRCBot {
-	auditor = auditor
+func NewIRCBot(suppliedAuditor quaditor.Auditor) *IRCBot {
+
+	auditor = suppliedAuditor
+	log.Printf("auditor: %#v,%#v\n", auditor, suppliedAuditor)
 	return &IRCBot{
 		config: &irc.Config{
 			Server:   "192.168.86.95:6667",
@@ -160,14 +162,20 @@ func queryv3(command *bot.Cmd) (bot.CmdResultV3, error) {
 		}
 		returnCommand.Message <- "all queries processed"
 		returnCommand.Message <- "results:\n"
+		log.Printf("querying: %#v\n", queries)
+		log.Println("sending query")
+		log.Printf("auditor: %#v\n", auditor)
 		paths, err := auditor.Query(queries...)
+		log.Println("query returned")
 		if err != nil {
 			returnCommand.Message <- "ran into error: " + err.Error()
 		} else {
 			for idx, path := range paths {
+				returnCommand.Message <- fmt.Sprintf("%v: %#v\n", idx, path)
 				returnCommand.Message <- fmt.Sprintf("%v: %s\n", idx, path.String())
 			}
 		}
+
 		returnCommand.Done <- true
 	}(command, returnCmd)
 
