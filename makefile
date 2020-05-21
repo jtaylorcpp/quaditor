@@ -1,10 +1,44 @@
 .PHONY: postgres
 
-go_get_private:
+GO_INSTALLED   := $(shell which go)
+GO_VERSION     ?= 1.14.1
+
+ifeq ($(findstring arm,$(shell uname -m)), arm)
+	ARCH = armv6l
+else ifeq ($(findstring x86,$(shell uname -m)), x86)
+	ARCH = amd64
+else 
+$(error unable to determine ARCH)
+endif
+
+ifeq ($(findstring Linux,$(shell uname -s)), Linux)
+	OS = linux
+else ifeq ($(findstring Darwin,$(shell uname -s)), Darwin)
+	OS = darwin
+
+else
+$(error unable to determine OS)
+endif
+
+install-dev: go-get-private build_tools ircd postgress
+
+build-tools: 
+ifeq ($(GO_INSTALLED),)
+	$(info installing Golang v${GO_VERSION} on OS=${OS}, ARCH=${ARCH})
+	curl -o /tmp/go${GO_VERSION}.${OS}-${ARCH}.tar.gz https://dl.google.com/go/go${GO_VERSION}.${OS}-${ARCH}.tar.gz
+	sudo tar -C /usr/local -xzf /tmp/go${GO_VERSION}.${OS}-${ARCH}.tar.gz
+	echo 'export PATH=$$PATH:/usr/local/go/bin' | sudo tee -a /etc/profile
+endif # end check for go installed
+	$(info installing git)
+	sudo apt install git -y
+
+
+go-get-private:
 	go env -w GOPRIVATE=pault.ag
 	git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 postgres:
+	$(info installing and setting up postgresql)
 	sudo apt install -y postgresql
 	sudo service postgresql start
 	sudo -u postgres psql -c "CREATE USER euler WITH PASSWORD 'euler'" 
@@ -30,6 +64,7 @@ $(error unable to determine OS)
 endif
 
 ircd: ircd-stage-files
+	$(info installing ircd)
 ifneq ($(whoami), root)
 	sudo mv $(shell ls -d /home/oragono/oragono-2.0.0*)/oragono /home/oragono/oragono
 	sudo chown oragono:oragono /home/oragono/oragono
@@ -49,7 +84,7 @@ else
 endif
 
 ircd-stage-files:
-	$(info os: $(IRC_OS) arch: $(IRC_OS))
+	$(info ircd config for os: $(IRC_OS) arch: $(IRC_OS))
 	wget -O /tmp/oragono.tar.gz https://github.com/oragono/oragono/releases/download/v2.0.0/oragono-2.0.0-$(IRC_OS)-$(IRC_ARCH).tar.gz
 ifneq ($(whoami), root)
 	sudo adduser --system --group oragono
@@ -68,7 +103,7 @@ else
 endif
 
 ircd-clean:
-	$(info os: $(IRC_OS) arch: $(IRC_OS))
+	$(info cleaning up ircd for os: $(IRC_OS) arch: $(IRC_OS))
 ifneq ($(whoami), root)
 	sudo systemctl stop oragono.service
 	sudo systemctl disable oragono.service
@@ -82,3 +117,10 @@ else
 	rm /etc/systemd/system/oragono.service
 	systemctl daemon-reload
 endif
+
+##### install code ####
+install-tool: postgres build-tools
+	go build -o ~/quaditor ./cmd/*.go
+	cp examples/bob_alice/bob_friends_keys_query.json ~/bob_friends_keys_query.json
+	cp examples/bob_alice/quads.json ~/keys_data_set.json
+	~/quaditor -f ~/keys_data_set.json
