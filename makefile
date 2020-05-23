@@ -119,8 +119,10 @@ else
 endif
 
 ##### install code ####
-install-tool: postgres build-tools
-	go build -o ~/quaditor ./cmd/*.go
+install-tool: install-quaditor postgres build-tools
+
+install-quaditor:
+	go build -o ~/quaditorcli ./cmd/*.go
 	cp examples/bob_alice/bob_friends_keys_query.json ~/bob_friends_keys_query.json
 	cp examples/bob_alice/quads.json ~/keys_data_set.json
-	~/quaditor -f ~/keys_data_set.json
+	~/quaditorcli load -f ~/keys_data_set.json
