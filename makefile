@@ -20,27 +20,32 @@ else
 $(error unable to determine OS)
 endif
 
-install-dev: go-get-private build_tools ircd postgress
+install-dev: install-build-tools install-ircd install-postgresql
 
-build-tools: 
+install-build-tools: 
+	$(info installing git)
+	sudo apt install -y git make curl
+	$(MAKE) install-go
+
+install-go:
 ifeq ($(GO_INSTALLED),)
 	$(info installing Golang v${GO_VERSION} on OS=${OS}, ARCH=${ARCH})
 	curl -o /tmp/go${GO_VERSION}.${OS}-${ARCH}.tar.gz https://dl.google.com/go/go${GO_VERSION}.${OS}-${ARCH}.tar.gz
 	sudo tar -C /usr/local -xzf /tmp/go${GO_VERSION}.${OS}-${ARCH}.tar.gz
 	echo 'export PATH=$$PATH:/usr/local/go/bin' | sudo tee -a /etc/profile
 endif # end check for go installed
-	$(info installing git)
-	sudo apt install git -y
+	source /etc/profile && $(MAKE) go-get-private
 
 
 go-get-private:
 	go env -w GOPRIVATE=pault.ag
 	git config --global url."git@github.com:".insteadOf "https://github.com/"
 
-postgres:
+install-postgresql:
 	$(info installing and setting up postgresql)
 	sudo apt install -y postgresql
-	sudo service postgresql start
+	sudo systemctl enable postgresql
+	sudo systemctl start postgresql
 	sudo -u postgres psql -c "CREATE USER euler WITH PASSWORD 'euler'" 
 	sudo -u postgres psql -c 'CREATE DATABASE euler'
 
@@ -63,7 +68,7 @@ else
 $(error unable to determine OS)
 endif
 
-ircd: ircd-stage-files
+install-ircd: ircd-stage-files
 	$(info installing ircd)
 ifneq ($(whoami), root)
 	sudo mv $(shell ls -d /home/oragono/oragono-2.0.0*)/oragono /home/oragono/oragono
@@ -119,8 +124,6 @@ else
 endif
 
 ##### install code ####
-install-tool: install-quaditor postgres build-tools
-
 install-quaditor:
 	go build -o ~/quaditorcli ./cmd/*.go
 	cp examples/bob_alice/bob_friends_keys_query.json ~/bob_friends_keys_query.json
